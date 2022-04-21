@@ -78,8 +78,8 @@ export const Scene = ({setVideoVisible}) => {
       <ambientLight intensity={0.5}/>
       <color attach="background" args={['#202020']}/>
       <Suspense fallback={null}>
-        {/*<Cube setVideoVisible={setVideoVisible}/>*/}
-        <Test/>
+        <Cube setVideoVisible={setVideoVisible}/>
+        {/*<Test/>*/}
       </Suspense>
     </Canvas>
   )

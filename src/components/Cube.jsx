@@ -1,7 +1,8 @@
 import gsap from "gsap"
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
+import { log } from 'three/examples/jsm/renderers/nodes/ShaderNode'
 
 //CONSTANTS
 //------------------------------------------------------------------------------
@@ -33,6 +34,7 @@ export const Cube = ({setVideoVisible}) => {
   const frontTexture = useRef()
   const topTexture = useRef()
   const bottomTexture = useRef()
+  const {camera, scene} = useThree()
 
   const lockMouseOffset = useRef(false)
   const prevElapsedTimeValue = useRef(0)
@@ -44,7 +46,7 @@ export const Cube = ({setVideoVisible}) => {
   })
   const frontRef = useRef()
   const scroll = useRef(0);
-  const isNear = useRef()
+  const [isNear, setNear] = useState()
   let mouse = new THREE.Vector2(0, 0)
   const boxGroupRef = useRef()
   const facesPositions = useRef({
@@ -117,70 +119,129 @@ export const Cube = ({setVideoVisible}) => {
     video3.play()
     video4.play()
 
+    frontTexture.current.wrapS = frontTexture.current.wrapT = THREE.ClampToEdgeWrapping
+    topTexture.current.wrapS = topTexture.current.wrapT = THREE.ClampToEdgeWrapping
+    backTexture.current.wrapS = backTexture.current.wrapT = THREE.ClampToEdgeWrapping
+    bottomTexture.current.wrapS = bottomTexture.current.wrapT = THREE.ClampToEdgeWrapping
+
   }, [video, video2, video3, video4])
 
   const setTextureWrapping = (texture) => {
-    texture.current.wrapT = texture.current.wrapS = THREE.ClampToEdgeWrapping
-    texture.current.offset.y = 0.5
-    texture.current.repeat.x = 1
-    texture.current.repeat.y = 0.25
-  }
-
-  const wrapTexture = (texture) => {
-    //todo для ресайза aspect видео
+    // texture.current.wrapT = texture.current.wrapS = THREE.ClampToEdgeWrapping
+    // texture.current.offset.y = 0.5
     // texture.current.repeat.x = 1
-    // texture.current.repeat.y = !isNear.current ? 0.8 : 0.4
-
-    console.log('vol1', texture.current.offset)
-    clickTimeline.add('click')
-      .to(texture.current.repeat, {
-        duration: duration,
-        y: isNear.current ? 0.6 : 0.6,
-        ease: 'power3'
-      }, 'click')
-      .to(texture.current.offset, {
-        duration: duration,
-        y: isNear.current ? 0 : 0.5,
-      }, 'click')
-
-    // console.log('vol2', texture.current.offset)
+    // texture.current.repeat.y = 0.25
   }
+  const currentFace = useRef('all')
+
+  const wrapTextureInner = (texture) => {
+    window.scrollTo(0, scrollCheckPoints[currentFace.current]?.scroll)
+    scrollX.value = window.scrollY / (2955 - window.innerHeight)
+
+    console.log('CC', currentFace.current)
+    clickTimeline.add('resize')
+      .to(texture.current.repeat, {
+        duration: 1,
+        y: isNear ? 0.98 : 0.2,
+        x: isNear ? 1 : 0.91,
+        ease: 'power3'
+      }, 'resize')
+      .to(texture.current.offset, {
+        duration: 1,
+        y: isNear ? 0 : 0.39,
+        x: isNear ? 0 : 0.045,
+        ease: 'power3'
+      }, 'resize')
+      .to(frontRef.current.scale, {
+        duration: 1,
+        y: isNear ? 5 : 1,
+        x: isNear ? 1.11 : 1,
+        ease: 'power3'
+      }, 'resize')
+      .to(boxGroupRef.current.rotation, {
+        duration: duration,
+        x: Math.PI * scrollX.value,
+        ease: 'power3'
+      }, 'resize')
+  }
+
+  const firstWrap = (texture) => {
+    texture.current.repeat.set(0.91, 0.2, 0)
+    texture.current.offset.set(0.045, 0.39, 0)
+  }
+
+  const wrapTexture = () => {
+    console.log('vol0')
+    if (currentFace.current === 'front') {
+      console.log('vol1', 'front')
+      video.muted = !isNear
+      wrapTextureInner(frontTexture)
+    }
+    if (currentFace.current === 'top') {
+      console.log('vol2', 'top')
+      video2.muted = !isNear
+      wrapTextureInner(topTexture)
+    }
+    if (currentFace.current === 'back') {
+      console.log('vol3', 'back')
+      video3.muted = !isNear
+      wrapTextureInner(backTexture)
+    }
+    if (currentFace.current === 'bottom') {
+      console.log('vol4', 'bottom')
+      video4.muted = !isNear
+      wrapTextureInner(bottomTexture)
+    }
+    if (currentFace.current === 'all' && frontTexture.current) {
+      console.log('vol5', frontTexture.current)
+      firstWrap(frontTexture)
+      firstWrap(topTexture)
+      firstWrap(backTexture)
+      firstWrap(bottomTexture)
+    }
+  }
+
 
   const handleFaceClick = (face, event) => {
     lockMouseOffset.current = !lockMouseOffset.current
+    currentFace.current = face
+    setNear(!isNear)
 
     //доскролл при нажатиии на грань
-    switch (face) {
-      case 'front':
-        // video.muted = isNear.current
-        scrollToCheckpoint.current.front = true
-        wrapTexture(frontTexture)
-        console.log('vol2', frontTexture.current.offset)
-        break
-      case 'top':
-        // video2.muted = isNear.current
-        scrollToCheckpoint.current.top = true
-        wrapTexture(topTexture)
-        break
-      case 'back':
-        // video3.muted = isNear.current
-        scrollToCheckpoint.current.back = true
-        wrapTexture(backTexture)
-        break
-      case 'bottom':
-        // video4.muted = isNear.current
-        scrollToCheckpoint.current.bottom = true
-        wrapTexture(bottomTexture)
-        break
-    }
+    // switch (face) {
+    //   case 'front':
+    //     // video.muted = isNear
+    //     scrollToCheckpoint.current.front = true
+    //     wrapTexture(frontTexture)
+    //     console.log('vol2', frontTexture.current.offset)
+    //     break
+    //   case 'top':
+    //     // video2.muted = isNear
+    //     scrollToCheckpoint.current.top = true
+    //     wrapTexture(topTexture)
+    //     break
+    //   case 'back':
+    //     // video3.muted = isNear
+    //     scrollToCheckpoint.current.back = true
+    //     wrapTexture(backTexture)
+    //     break
+    //   case 'bottom':
+    //     // video4.muted = isNear
+    //     scrollToCheckpoint.current.bottom = true
+    //     wrapTexture(bottomTexture)
+    //     break
+    // }
 
     frontRef.current = event.object
-    isNear.current = !isNear.current
-
   }
 
+  useEffect(() => {
+    scrollToCheckpoint.current[currentFace.current] = true
+    wrapTexture()
+  }, [isNear])
+
   const handleScroll = () => {
-    if (!isNear.current) {
+    if (!isNear) {
       scrollX.value = window.scrollY / (2955 - window.innerHeight)
       boxGroupRef.current.rotation.set(Math.PI * scrollX.value, 0, 0)
       scroll.current = Math.PI * scrollX.value
@@ -191,6 +252,12 @@ export const Cube = ({setVideoVisible}) => {
     mouse = {
       x: event.clientX / window.innerWidth * 2 - 1,
       y: -(event.clientY / window.innerHeight) * 2 + 1,
+    }
+
+    if (!lockMouseOffset.current && !isNear) {
+      camera.position.x += (-mouse.x - camera.position.x) * .9;
+      camera.position.y += (-mouse.y - camera.position.y);
+      camera.lookAt(scene.position);
     }
   }
 
@@ -230,76 +297,34 @@ export const Cube = ({setVideoVisible}) => {
     window.scrollTo(0, 0)
   }, []);
 
-  useEffect(() => {
-    if (frontTexture.current) {
-      console.log('vol1')
-      setTextureWrapping(frontTexture)
-    }
-    if (topTexture.current) {
-      console.log('vol2')
-      setTextureWrapping(topTexture)
-    }
-    if (backTexture.current) {
-      setTextureWrapping(backTexture)
-      //todo неск-ко wrap-ов не работают вместе или я не въезжаю ещё
-      // backTexture.current.wrapT = THREE.RepeatWrapping
-      // backTexture.current.repeat.y = -1
-    }
-    if (bottomTexture.current) {
-      setTextureWrapping(bottomTexture)
-    }
-  }, [frontTexture.current, topTexture.current])
-
   useFrame(({camera, scene, clock}) => {
-    if (!lockMouseOffset.current && !isNear.current) {
-      // console.log('notLock')
-      camera.position.x += (-mouse.x - camera.position.x) * .9;
-      camera.position.y += (-mouse.y - camera.position.y);
-      camera.lookAt(scene.position);
-    } else {
-      // console.log('lock')
-      camera.position.x = 0
-      camera.position.y = 0
-      camera.lookAt(scene.position);
-    }
-
-    // if (camera.position.z === 1) {
-    // 	setVideoVisible(true)
-    // } else {
-    // 	setVideoVisible(false)
-    // }
-
     ['front', 'top', 'back', 'bottom'].forEach(item => {
       if (scrollToCheckpoint.current[item]) {
-        console.log('II', item)
-        window.scrollTo(0, scrollCheckPoints[item].scroll)
-        scrollX.value = window.scrollY / (2955 - window.innerHeight)
-        timeline.add('faceClick')
-          .to(frontRef.current.scale, {
-            duration: duration,
-            x: isNear.current ? 0.4 : 1,
-            ease: 'power3'
-          }, 'faceClick')
-          .to(boxGroupRef.current.rotation, {
-            duration: duration,
-            x: Math.PI * scrollX.value,
-            ease: 'power3'
-          }, 'faceClick')
-          .to(camera.position, {
-            duration: duration,
-            x: 0,
-            y: 0,
-            z: isNear.current ? 1 : 2.4,
-            ease: 'power3'
-          }, 'faceClick')
+        // console.log('II', item)
+        // window.scrollTo(0, scrollCheckPoints[item].scroll)
+        // scrollX.value = window.scrollY / (2955 - window.innerHeight)
+        // timeline.add('faceClick')
+          // .to(frontRef.current.scale, {
+          //   duration: duration,
+          //   x: isNear ? 0.4 : 1,
+          //   ease: 'power3'
+          // }, 'faceClick')
+          // .to(boxGroupRef.current.rotation, {
+          //   duration: duration,
+          //   x: Math.PI * scrollX.value,
+          //   ease: 'power3'
+          // }, 'faceClick')
+          // .to(camera.position, {
+          //   duration: duration,
+          //   x: 0,
+          //   y: 0,
+          //   z: isNear ? 1 : 2.4,
+          //   ease: 'power3'
+          // }, 'faceClick')
 
-        scrollToCheckpoint.current[item] = false
+        // scrollToCheckpoint.current[item] = false
       }
     })
-
-    //поворот задней текстуры
-    // backTexture.current.wrapT = THREE.RepeatWrapping
-    // backTexture.current.repeat.y = -1
 
     //докрутка до контрольной точки
     if (window.scrollY <= 987.5 / 2) {
