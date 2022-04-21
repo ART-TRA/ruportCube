@@ -117,7 +117,14 @@ const Box = ({setVideoVisible}) => {
 
   const wrapTexture = (texture) => {
     //todo для ресайза aspect видео
+
     // texture.current.repeat.x = 1
+    gsap.to(texture.current.repeat, {
+      duration: 1,
+      x: 1,
+      y: !isNear.current ? 1 : 0.4,
+      ease: 'power3'
+    })
     // texture.current.repeat.y = !isNear.current ? 1 : 0.4
   }
 
@@ -207,9 +214,9 @@ const Box = ({setVideoVisible}) => {
 
   const setTextureWrapping = (texture) => {
     //todo для ресайза aspect видео
-    // texture.current.wrapT = texture.current.wrapS = THREE.ClampToEdgeWrapping
-    // texture.current.repeat.x = 1
-    // texture.current.repeat.y = 0.25
+    texture.current.wrapT = texture.current.wrapS = THREE.ClampToEdgeWrapping
+    texture.current.repeat.x = 1
+    texture.current.repeat.y = 0.25
   }
   useEffect(() => {
     if (frontTexture.current) {
@@ -359,6 +366,81 @@ const Box = ({setVideoVisible}) => {
   )
 }
 
+//TEST
+//---------------------------------------------------------------------------------
+const textureParams = {
+  width: 1280,
+  height: 720,
+}
+
+const TestTexture = () => {
+  const timeline = gsap.timeline()
+  const mainRef = useRef()
+  const textureRef = useRef()
+  const textureAspectRatio = useRef(720/1280)
+  const [isLarge, setLarge] = useState(false)
+
+  const [video] = useState(() =>
+    Object.assign(document.createElement('video'), {
+      // src: 'video/Ricardo.mp4',
+      src: 'video/Gorillaz.mp4',
+      crossOrigin: 'Anonymous',
+      loop: true,
+      muted: true,
+    }),
+  )
+
+  const handleTextureClick = (event) => {
+    setLarge(!isLarge)
+  }
+
+  useEffect(() => {
+    timeline.add('faceClick')
+      .to(mainRef.current.scale, {
+        duration: 1,
+        // x: isLarge ? 1.2 : 1,
+        y: isLarge ? 4 : 1,
+        ease: 'power3'
+      }, 'faceClick')
+      .to(textureRef.current.repeat, {
+        duration: 1,
+        x: isLarge ? 1 : 1,
+        y: isLarge ? 0.8 : 0.2,
+        ease: 'power3'
+      }, 'faceClick')
+      .to(textureRef.current.offset, {
+        duration: 1,
+        y: isLarge ? 0 : 0.5,
+        ease: 'power3'
+      }, 'faceClick')
+  }, [isLarge])
+
+  useEffect(() => {
+    video.play()
+    console.log(textureRef.current)
+    textureRef.current.wrapS = THREE.ClampToEdgeWrapping
+    textureRef.current.wrapT = THREE.ClampToEdgeWrapping
+    textureRef.current.repeat.y = 0.2
+    textureRef.current.repeat.x = 1
+    textureRef.current.offset.y = 0.5
+  }, [video])
+
+  return (
+    <mesh
+      ref={mainRef}
+      onClick={handleTextureClick}
+    >
+      <planeBufferGeometry args={[8, 1]}/>
+      <meshBasicMaterial toneMapped={false}>
+        <videoTexture ref={textureRef} attach="map" args={[video]} encoding={THREE.sRGBEncoding}/>
+      </meshBasicMaterial>
+    </mesh>
+  )
+}
+
+//---------------------------------------------------------------------------------
+
+
 const Scene = ({setVideoVisible}) => {
   return (
     <Canvas
@@ -368,7 +450,8 @@ const Scene = ({setVideoVisible}) => {
       <ambientLight intensity={0.5}/>
       <color attach="background" args={['#202020']}/>
       <Suspense fallback={null}>
-        <Box setVideoVisible={setVideoVisible}/>
+        <TestTexture/>
+        {/*<Box setVideoVisible={setVideoVisible}/>*/}
       </Suspense>
     </Canvas>
   )
@@ -425,7 +508,6 @@ export const App = () => {
   const [isVideoVisible, setVideoVisible] = useState(false)
   return (
     <>
-      {/*<Audio/>*/}
       {/*<VideoLayer isVideoVisible={isVideoVisible}/>*/}
       <div className="scene">
         <Scene setVideoVisible={setVideoVisible}/>
