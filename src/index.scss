@@ -16,12 +16,15 @@ code {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body,
 #root {
   position: relative;
   width: 100%;
-  height: 400vh;
   margin: 0;
   padding: 0;
 
@@ -34,6 +37,33 @@ body,
   //  height: 0;
   //}
   //-------------------------------
+}
+
+#root {
+  height: 400vh;
+}
+
+//::-webkit-scrollbar {
+//  display: none !important;
+//  width: 0;
+//  height: 0;
+//}
+
+.noscroll {
+  //::-webkit-scrollbar {
+  //  display: none !important;
+  //  width: 0;
+  //  height: 0;
+  //}
+  //
+  //-ms-overflow-style: none;
+  //scrollbar-width: none;
+}
+
+.noscroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0;
+  height: 0;
 }
 
 .scene {
@@ -65,3 +95,42 @@ body,
   }
 }
 
+.front {
+  position: fixed;
+  top: 25%;
+  left: 10%;
+  width: 80%;
+  z-index: 5;
+  pointer-events: none;
+
+  &--bottom {
+    width: 100%;
+    margin-top: 230px;
+
+    & h5 {
+      color: #ffffff;
+      font-weight: 500;
+      font-size: 30px;
+      line-height: 30px;
+      text-transform: uppercase;
+      text-align: right;
+    }
+  }
+}
+
+.title {
+  width: 700px;
+  max-width: 700px;
+  margin: 0;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 100px;
+  line-height: 100px;
+  text-transform: uppercase;
+  transition: 0.3s;
+  //transform: translateY(-50px);
+
+  //&--again {
+  //  transform: unset;
+  //}
+}
