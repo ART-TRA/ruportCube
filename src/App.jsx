@@ -8,7 +8,14 @@ let i = 0
 export const App = () => {
   const [isVideoVisible, setVideoVisible] = useState(false)
   const [isLayoutVisible, setLayoutVisible] = useState(true)
-  
+  const [isSceneHovered, setSceneHovered] = useState(false)
+
+  const setHovered = (value) => {
+    setTimeout(() => {
+      setSceneHovered(value)
+    }, 1000)
+  }
+
   //-----------------------------------------------------------------------------------
   const [playAnimation, setPlayAnimation] = useState('first')
   const setClick = () => {
@@ -21,10 +28,15 @@ export const App = () => {
       {/*<Audio/>*/}
       {/*<VideoLayer isVideoVisible={isVideoVisible}/>*/}
       {/*<FrontLayout isLayoutVisible={isLayoutVisible} />*/}
-      <div className="scene">
+      <div
+        className="scene"
+        onMouseLeave={() => setHovered(false)}
+        onMouseOver={() => setHovered(true)}
+      >
         <Scene 
           setVideoVisible={setVideoVisible} 
           playAnimation={playAnimation}
+          isSceneHovered={isSceneHovered}
         />
       </div>
     </>

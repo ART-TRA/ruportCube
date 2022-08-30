@@ -3,7 +3,7 @@ import React, { Suspense } from 'react'
 import * as THREE from 'three'
 import { Cube } from './Cube'
 
-export const Scene = ({setVideoVisible, currentFace, playAnimation}) => {
+export const Scene = ({setVideoVisible, currentFace, playAnimation, isSceneHovered}) => {
   return (
     <Canvas
       dpr={[1, 2]}
@@ -12,7 +12,11 @@ export const Scene = ({setVideoVisible, currentFace, playAnimation}) => {
       <ambientLight intensity={0.5}/>
       <color attach="background" args={['#858585']}/>
       <Suspense fallback={null}>
-        <Cube setVideoVisible={setVideoVisible} currentEdge={currentFace}/>
+        <Cube
+          setVideoVisible={setVideoVisible}
+          currentEdge={currentFace}
+          isSceneHovered={isSceneHovered}
+        />
       </Suspense>
     </Canvas>
   )

@@ -8,7 +8,7 @@ import { isTablet, isMobile } from './../utilities/resize';
 //------------------------------------------------------------------------------
 let scrollX = {value: 0};
 let currentSide = 'front'
-const rotationDelay = 120
+const rotationDelay = 60
 const duration = 1
 
 //общая высота скролла
@@ -18,9 +18,9 @@ const currentScroll = (window.scrollY * 1.5) / (scrollHeight - window.innerHeigh
 
 const scrollCheckPoints = {
 	front: {radian: 0.0, scroll: 0.0},
-	top: {radian: Math.PI * 0.5, scroll: scrollHeight * 0.25},
-	back: {radian: Math.PI, scroll: scrollHeight * 0.5},
-	bottom: {radian: Math.PI * 1.5, scroll: scrollHeight * 0.75},
+	bottom: {radian: -Math.PI * 0.5, scroll: scrollHeight * 0.25},
+	back: {radian: -Math.PI, scroll: scrollHeight * 0.5},
+	top: {radian: -Math.PI * 1.5, scroll: scrollHeight * 0.75},
 }
 
 //------------------------------------------------------------------------------
@@ -28,7 +28,7 @@ const scrollCheckPoints = {
 let mouse = new THREE.Vector2(0, 0)
 let isLockMove = false
 
-export const Cube = ({setVideoVisible}) => {
+export const Cube = ({setVideoVisible, isSceneHovered}) => {
 	const clickTimeline = gsap.timeline()
 	const clickTimelineFirst = gsap.timeline()
 	const elapsedTimeSide = useRef(0)
@@ -37,6 +37,7 @@ export const Cube = ({setVideoVisible}) => {
 	const topTexture = useRef()
 	const bottomTexture = useRef()
 	const {camera, scene, viewport} = useThree()
+	const state = useThree()
 	const [geometryArgs, setGeometryArgs] = useState([]);
 	const [facesPositions, setFacesPositions] = useState({});
 	const faceMaterialFront = useRef()
@@ -156,17 +157,16 @@ export const Cube = ({setVideoVisible}) => {
 							x: isNear ? getViewportSizes().x : 1,
 							ease: 'power3'
 						}, 'resize')
-
 						.to(camera.position, {
 							duration: 1,
-							y: isNear ? 0 : mouse.y * 2,
-							x: isNear ? 0 : mouse.x * 2,
+							y: isNear ? 0 : -state.mouse.y * 2,
+							x: isNear ? 0 : state.mouse.x * 2,
 							z: 4,
 							ease: 'power3',
 							onStart: () => {
 								if (!isLockMove) {
 									camera.position.lerp(
-										new THREE.Vector3(mouse.x * 2, mouse.y * 2, 4),
+										new THREE.Vector3(state.mouse.x * 2, -state.mouse.y * 2, 4),
 										0.05
 									)
 								}
@@ -259,7 +259,7 @@ export const Cube = ({setVideoVisible}) => {
 
 	const handleScroll = useCallback((event) => {
 		if (!lockMouseOffset.current && !isLockMove) {
-			scrollX.value = window.scrollY * Math.PI * 1.5 / (scrollHeight - window.innerHeight)
+			scrollX.value = window.scrollY * -Math.PI * 1.5 / (scrollHeight - window.innerHeight)
 			boxGroupRef.current.rotation.set(scrollX.value, 0, 0)
 			scroll.current = scrollX.value
 		}
@@ -331,12 +331,28 @@ export const Cube = ({setVideoVisible}) => {
 		}))
 	}, [currentEdge])
 
+	//поворот куба в начальное сост-е если курсов в покое
+	useEffect(() => {
+		if (!isSceneHovered) {
+			gsap.to(camera.position, {
+				duration: 1,
+				y: !isNear && 0,
+				x: !isNear && 0,
+				z: 4,
+				ease: 'power3',
+			})
+
+			state.mouse.x = 0
+			state.mouse.y = 0
+		}
+	}, [isSceneHovered])
+
 	useFrame((state) => {
 		state.camera.lookAt(scene.position);
 
 		if (!isLockMove) {
 			state.camera.position.lerp(
-				new THREE.Vector3(state.mouse.x * 2, state.mouse.y * 2, 4),
+				new THREE.Vector3(state.mouse.x * 2, -state.mouse.y * 2, 4),
 				0.05
 			)
 		}
@@ -381,26 +397,25 @@ export const Cube = ({setVideoVisible}) => {
 			elapsedTimeSide.current = 0
 		}
 
-		// TODO раскомментить
 		//докрутка до контрольной точки
 		if (!isNear) {
 			setPrevScroll(window.scrollY)
 			if (prevScroll === window.scrollY) { //если находится в покое
-				if (window.scrollY > 0 && window.scrollY < scrollCheckPoints.top.scroll / 2) {
+				if (window.scrollY > 0 && window.scrollY < scrollCheckPoints.bottom.scroll / 2) {
 					elapsedTimeSide.current++
 					rotateToCheckPoint(scrollCheckPoints.front.scroll, 'front')
-				} else if (window.scrollY > (scrollCheckPoints.top.scroll / 2) &&
-					window.scrollY < (scrollCheckPoints.back.scroll / 2 + scrollCheckPoints.top.scroll / 2)
+				} else if (window.scrollY > (scrollCheckPoints.bottom.scroll / 2) &&
+					window.scrollY < (scrollCheckPoints.back.scroll / 2 + scrollCheckPoints.bottom.scroll / 2)
 				) {
 					elapsedTimeSide.current++
-					rotateToCheckPoint(scrollCheckPoints.top.scroll, 'top')
-				} else if (window.scrollY > (scrollCheckPoints.back.scroll / 2 + scrollCheckPoints.top.scroll / 2) &&
-					window.scrollY < (scrollHeight - window.innerHeight - scrollCheckPoints.top.scroll / 2)) {
+					rotateToCheckPoint(scrollCheckPoints.bottom.scroll, 'bottom')
+				} else if (window.scrollY > (scrollCheckPoints.back.scroll / 2 + scrollCheckPoints.bottom.scroll / 2) &&
+					window.scrollY < (scrollHeight - window.innerHeight - scrollCheckPoints.bottom.scroll / 2)) {
 					elapsedTimeSide.current++
 					rotateToCheckPoint(scrollCheckPoints.back.scroll, 'back')
-				} else if (window.scrollY > (scrollHeight - window.innerHeight - scrollCheckPoints.top.scroll / 2)) {
+				} else if (window.scrollY > (scrollHeight - window.innerHeight - scrollCheckPoints.bottom.scroll / 2)) {
 					elapsedTimeSide.current++
-					rotateToCheckPoint(scrollCheckPoints.back.bottom, 'bottom')
+					rotateToCheckPoint(scrollCheckPoints.top.scroll, 'top')
 				}
 			}
 		}
@@ -411,21 +426,21 @@ export const Cube = ({setVideoVisible}) => {
 			faceMaterialBack.current.color = new THREE.Color('rgb(28,27,27)')
 			faceMaterialBottom.current.color = new THREE.Color('rgb(28,27,27)')
 
-			if (window.scrollY <= scrollCheckPoints.top.scroll / 2) {
+			if (window.scrollY <= scrollCheckPoints.bottom.scroll / 2) {
 				faceMaterialFront.current.color = new THREE.Color('rgb(255,255,255)')
 				setCurrentEdge('front')
-			} else if (window.scrollY > (scrollCheckPoints.top.scroll / 2) &&
-				window.scrollY <= (scrollCheckPoints.back.scroll / 2 + scrollCheckPoints.top.scroll / 2)
+			} else if (window.scrollY > (scrollCheckPoints.bottom.scroll / 2) &&
+				window.scrollY <= (scrollCheckPoints.back.scroll / 2 + scrollCheckPoints.bottom.scroll / 2)
 			) {
-				faceMaterialTop.current.color = new THREE.Color('rgb(255,255,255)')
-				setCurrentEdge('top')
-			} else if (window.scrollY > (scrollCheckPoints.back.scroll / 2 + scrollCheckPoints.top.scroll / 2) &&
-				window.scrollY <= (scrollHeight - window.innerHeight - scrollCheckPoints.top.scroll / 2)) {
+				faceMaterialBottom.current.color = new THREE.Color('rgb(255,255,255)')
+				setCurrentEdge('bottom')
+			} else if (window.scrollY > (scrollCheckPoints.back.scroll / 2 + scrollCheckPoints.bottom.scroll / 2) &&
+				window.scrollY <= (scrollHeight - window.innerHeight - scrollCheckPoints.bottom.scroll / 2)) {
 				faceMaterialBack.current.color = new THREE.Color('rgb(255,255,255)')
 				setCurrentEdge('back')
 			} else {
-				faceMaterialBottom.current.color = new THREE.Color('rgb(255,255,255)')
-				setCurrentEdge('bottom')
+				faceMaterialTop.current.color = new THREE.Color('rgb(255,255,255)')
+				setCurrentEdge('top')
 			}
 		}
 	})
