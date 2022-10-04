@@ -10,7 +10,6 @@ export const Scene = ({setVideoVisible, currentFace, playAnimation, isSceneHover
       camera={{fov: 50, position: [0, 0, 4], near: 0.1, far: 1000}}
     >
       <ambientLight intensity={0.5}/>
-      <color attach="background" args={['#858585']}/>
       <Suspense fallback={null}>
         <Cube
           setVideoVisible={setVideoVisible}
