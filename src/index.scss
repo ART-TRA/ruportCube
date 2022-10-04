@@ -134,3 +134,7 @@ body,
   //  transform: unset;
   //}
 }
+
+canvas {
+  z-index: -1;
+}

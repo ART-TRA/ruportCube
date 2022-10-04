@@ -13,6 +13,7 @@ const duration = 1
 
 //общая высота скролла
 const scrollHeight = document.getElementById('root').scrollHeight
+
 //текущее значение скролла куба
 const currentScroll = (window.scrollY * 1.5) / (scrollHeight - window.innerHeight)
 
@@ -60,6 +61,12 @@ export const Cube = ({setVideoVisible, isSceneHovered}) => {
 	const isNearRef = useRef(isNear)
 	const [prevScroll, setPrevScroll] = useState(0)
 	const boxGroupRef = useRef()
+
+	useEffect(() => {
+		window.addEventListener("message", function (e) {
+			window.scrollTo({top: Number(e.data), behavior: 'smooth'});
+		});
+	  }, []);
 
 	const currentFace = useRef('front')
 	const [video] = useState(() =>
@@ -240,6 +247,7 @@ export const Cube = ({setVideoVisible, isSceneHovered}) => {
 		setNear(!isNear)
 		frontRef.current = event.object
 		elapsedTimeSide.current = 0
+		window.parent.postMessage('CallFunctionA', '*');
 
 		switch (face) {
 			case 'front':
